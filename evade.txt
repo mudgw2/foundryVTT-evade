@@ -2,49 +2,52 @@
 if (typeof game === 'undefined' || !game.user) {
     console.error("Foundry VTT 'game' object not found or user not logged in. This script must be run within an active Foundry VTT session.");
 }else{
-
         if (!actor) {
           ui.notifications.warn("You must have an actor selected");
         } else {
     //TARGETING TOKEN
     // Check if any tokens are targeted
-    const targetedTokens = game.user.targets; 
-    if (targetedTokens.size > 0){
-        
-        const CR = 15 + (1.5*(game.user.targets.values().next().value.actor.system.details.cl.value));
+    const target = game.user.targets.values().next().value.actor;
+    //const actor = game.user.targets.values().next().value.actor;
+          
+    if (game.user.targets.size > 0){
+      const actor = canvas.tokens.controlled[0].actor;
+      //This is the characters CL not the Targets...
+        const CR = 15 + (1.5*(actor.system.details.cl.value));
         const DC = Math.floor(CR);
         let text = DC;
-        //let bluff = canvas.tokens.controlled[0].actor.system.skills.blu.mod;
-        const bluff = canvas.tokens.controlled[0].actor.system.skills?.blu.mod;
-        const firstTargetedToken = targetedTokens.values().next().value;
-        const tokenName = firstTargetedToken.name;
+        const bluff = actor.system.skills?.blu.mod;
+        const tokenName = target.name;
         // Log the token name to the console
             ChatMessage.create({
                 content: `The ${tokenName} &nbsp;-&nbsp; <strong>Feint Target DC: ${DC}</strong>`,
             });
-    const buttonlabel = 'Roll Feint Check';
-    const text2 = '<div style="text-align: center; padding: 5px;"><strong>' + text + '</strong></div>';
-       console.log(bluff);
-    const diceRoll = new Roll(`1d20 + ${bluff}`);
-      //const diceRoll = await new Roll('1d20 + ${bluff}').evaluate({async:true});
+      const diceRoll = new Roll(`1d20`);   
       // Execute the roll
       await diceRoll.evaluate({ async: true });
-      const ModifiedDiceRoll = diceRoll.total + bluff;
-      if (ModifiedDiceRoll >= DC) {
-              	text = `<strong>${tokenName} is flat-footed: -2 DEX</strong><br/><small>You rolled a <a class="inline-result" style="color:black"><i class="fas fa-dice-d20"></i> ${diceRoll.total} + ${bluff} = ${ModifiedDiceRoll}</small>`;
-    console.log(`Applying Flat-Footed to ${targetedTokens.size} targeted token(s)...`);
-    // Define the Flat-Footed effect data
-    const flatFootedEffectData = {
-        label: "Flat-Footed",
-        name: "Flat-Footed",
-        icon: "systems/sfrpg/icons/conditions/flatfooted.webp", // Standard Starfinder flat-footed icon
-        origin: game.user.id, // Mark who applied the effect
-        duration: {
-            rounds: 1, // Flat-footed is often for 1 round, but can be adjusted
-            // You can also use `turns`, `combat`, `startRound`, `endRound`, `startTime`, `startTurn`, etc.
-            // For a persistent effect until removed, you might omit duration or set a very long one.
-        },
-        changes: [
+      const OriginaldiceRoll = diceRoll;
+      const ModifieddiceRoll = diceRoll.total + bluff;
+
+      console.log(bluff);
+      console.log(diceRoll.total);
+      console.log(ModifieddiceRoll);
+      
+      if (ModifieddiceRoll >= DC) {
+         console.log('SUCCESS ====================================================');
+      
+          console.log(`Applying Flat-Footed to ${game.user.targets.size} targeted token(s)...`);
+          // Define the Flat-Footed effect data
+          const flatFootedEffectData = {
+              label: "Flat-Footed",
+              name: "Flat-Footed",
+              icon: "systems/sfrpg/icons/conditions/flatfooted.webp", // Standard Starfinder flat-footed icon
+              origin: game.user.id, // Mark who applied the effect
+                  duration: {
+                  rounds: 1, // Flat-footed is often for 1 round, but can be adjusted
+                  // You can also use `turns`, `combat`, `startRound`, `endRound`, `startTime`, `startTurn`, etc.
+                  // For a persistent effect until removed, you might omit duration or set a very long one.
+             },
+             changes: [
             // This change sets the Dexterity bonus to AC to 0.
             // The 'override' mode (5) means it replaces the existing value.
             // For Starfinder, AC is usually calculated from system.attributes.ac.value
@@ -76,23 +79,24 @@ if (typeof game === 'undefined' || !game.user) {
             }
         }
     };
-
+         text = `<strong>${tokenName} is flat-footed: -2 DEX</strong><br/><small>You rolled a <a class="inline-result" style="color:black"><i class="fas fa-dice-d20"></i> ${diceRoll.total} + ${bluff} = ${ModifieddiceRoll}</small>`;
        // Check if the actor already has the Flat-Footed effect
-        if (game.user.targets.values().next().value.actor.system.conditions['flat-footed']) {
+        
+        if (target.system.conditions['flat-footed']) {
             ui.notifications.info(`${tokenName} is already Flat-Footed.`);
             }else{
-          // This works, but has no duration requiring the condition to be removed manually...
-            //game.user.targets.values().next().value.actor.system.conditions['flat-footed'] = true;
-            //actor.createEmbeddedDocuments("ActiveEffect", [flatFootedEffectData]);
-            game.user.targets.values().next().value.actor.createEmbeddedDocuments("ActiveEffect", [flatFootedEffectData]);
-          game.user.targets.values().next().value.actor.system.conditions['flat-footed'] = true;
-          ui.notifications.info(`Applied Flat-Footed to ${tokenName}.`);
+              // This works, but has no duration requiring the condition to be removed manually...
+               ChatMessage.create({
+                    content: text,
+                });
             }          
        	}else{
-              	text = `<strong>${tokenName} didn't take the Bluff!</strong><br/><small>You rolled a <a class="inline-result"><i class="fas fa-dice-d20"></i> ${diceRoll.total} +  ${bluff} = ${ModifiedDiceRoll}</small>`;
+        // DC CHECK FAIL
+           ChatMessage.create({
+                content: `The ${tokenName} &nbsp;-&nbsp; <strong>Ignores the Feint Attempt</strong>`,
+            });
         }
-
 }//targetedTokens.size
 }//!actor
-
+//canvas.tokens.releaseAll();
 }//object check
