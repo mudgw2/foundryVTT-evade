@@ -1,0 +1,98 @@
+// Ensure the game object is available (it should be in Foundry VTT context)
+if (typeof game === 'undefined' || !game.user) {
+    console.error("Foundry VTT 'game' object not found or user not logged in. This script must be run within an active Foundry VTT session.");
+}else{
+
+        if (!actor) {
+          ui.notifications.warn("You must have an actor selected");
+        } else {
+    //TARGETING TOKEN
+    // Check if any tokens are targeted
+    const targetedTokens = game.user.targets; 
+    if (targetedTokens.size > 0){
+        
+        const CR = 15 + (1.5*(game.user.targets.values().next().value.actor.system.details.cl.value));
+        const DC = Math.floor(CR);
+        let text = DC;
+        //let bluff = canvas.tokens.controlled[0].actor.system.skills.blu.mod;
+        const bluff = canvas.tokens.controlled[0].actor.system.skills?.blu.mod;
+        const firstTargetedToken = targetedTokens.values().next().value;
+        const tokenName = firstTargetedToken.name;
+        // Log the token name to the console
+            ChatMessage.create({
+                content: `The ${tokenName} &nbsp;-&nbsp; <strong>Feint Target DC: ${DC}</strong>`,
+            });
+    const buttonlabel = 'Roll Feint Check';
+    const text2 = '<div style="text-align: center; padding: 5px;"><strong>' + text + '</strong></div>';
+       console.log(bluff);
+    const diceRoll = new Roll(`1d20 + ${bluff}`);
+      //const diceRoll = await new Roll('1d20 + ${bluff}').evaluate({async:true});
+      // Execute the roll
+      await diceRoll.evaluate({ async: true });
+      const ModifiedDiceRoll = diceRoll.total + bluff;
+      if (ModifiedDiceRoll >= DC) {
+              	text = `<strong>${tokenName} is flat-footed: -2 DEX</strong><br/><small>You rolled a <a class="inline-result" style="color:black"><i class="fas fa-dice-d20"></i> ${diceRoll.total} + ${bluff} = ${ModifiedDiceRoll}</small>`;
+    console.log(`Applying Flat-Footed to ${targetedTokens.size} targeted token(s)...`);
+    // Define the Flat-Footed effect data
+    const flatFootedEffectData = {
+        label: "Flat-Footed",
+        name: "Flat-Footed",
+        icon: "systems/sfrpg/icons/conditions/flatfooted.webp", // Standard Starfinder flat-footed icon
+        origin: game.user.id, // Mark who applied the effect
+        duration: {
+            rounds: 1, // Flat-footed is often for 1 round, but can be adjusted
+            // You can also use `turns`, `combat`, `startRound`, `endRound`, `startTime`, `startTurn`, etc.
+            // For a persistent effect until removed, you might omit duration or set a very long one.
+        },
+        changes: [
+            // This change sets the Dexterity bonus to AC to 0.
+            // The 'override' mode (5) means it replaces the existing value.
+            // For Starfinder, AC is usually calculated from system.attributes.ac.value
+            // and the dexterity bonus is part of that calculation.
+            // A more direct way to deny DEX to AC is to set the 'denied' flag or
+            // directly modify the AC calculation.
+            // The Starfinder system often handles conditions like Flat-Footed
+            // by denying the Dexterity bonus to AC directly when the condition is active.
+            // We'll add a change that specifically targets the AC calculation.
+            // For Starfinder, the 'denied' flag on the AC attribute is the canonical way.
+            {
+                key: "system.attributes.ac.denied", // This key indicates a denied attribute
+                mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, // Override the value
+                value: "dex", // Deny the Dexterity bonus
+                priority: 20 // High priority to ensure it applies
+            },
+            // You might also add a direct AC modifier if the above doesn't fully work
+            // or if you want to ensure a -2 penalty as a common house rule for flat-footed.
+            // {
+            //     key: "system.attributes.ac.value",
+            //     mode: CONST.ACTIVE_EFFECT_MODES.ADD, // Add a value
+            //     value: "-2", // Apply a -2 penalty to AC
+            //     priority: 20
+            // }
+        ],
+        flags: {
+            core: {
+                statusId: "flat-footed" // A unique ID for the status effect
+            }
+        }
+    };
+
+       // Check if the actor already has the Flat-Footed effect
+        if (game.user.targets.values().next().value.actor.system.conditions['flat-footed']) {
+            ui.notifications.info(`${tokenName} is already Flat-Footed.`);
+            }else{
+          // This works, but has no duration requiring the condition to be removed manually...
+            //game.user.targets.values().next().value.actor.system.conditions['flat-footed'] = true;
+            //actor.createEmbeddedDocuments("ActiveEffect", [flatFootedEffectData]);
+            game.user.targets.values().next().value.actor.createEmbeddedDocuments("ActiveEffect", [flatFootedEffectData]);
+          game.user.targets.values().next().value.actor.system.conditions['flat-footed'] = true;
+          ui.notifications.info(`Applied Flat-Footed to ${tokenName}.`);
+            }          
+       	}else{
+              	text = `<strong>${tokenName} didn't take the Bluff!</strong><br/><small>You rolled a <a class="inline-result"><i class="fas fa-dice-d20"></i> ${diceRoll.total} +  ${bluff} = ${ModifiedDiceRoll}</small>`;
+        }
+
+}//targetedTokens.size
+}//!actor
+
+}//object check
