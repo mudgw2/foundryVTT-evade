@@ -9,11 +9,8 @@ if (typeof game === 'undefined' || !game.user) {
         //const actor = canvas.tokens.controlled[0].document;
         const actor = canvas.tokens.controlled[0].actor;
         const target = game.user.targets.values().next().value.actor;
+        const diceRoll = 0;
 
-         console.log(actor.name);
-         console.log(target.name);
-
-       console.log('Checking for Targets');
     if (game.user.targets.size > 0){
       //const actor = canvas.tokens.controlled[0].actor;
       //This is the characters CL not the Targets...
@@ -26,12 +23,12 @@ if (typeof game === 'undefined' || !game.user) {
             ChatMessage.create({
                 content: `<small>The ${tokenName} &nbsp;-&nbsp; <strong>Combat Expertise(Ex) Target DC: ${DC}</strong></small>`,
             });
-      const diceRoll = new Roll(`1d20`);   
-      // Execute the roll
-      await diceRoll.evaluate({ async: true });
-      const OriginaldiceRoll = diceRoll;
-      const ModifieddiceRoll = diceRoll.total + bluff;
-      
+
+      (async () => {
+        let diceRoll = new Roll("1d20");   
+        await diceRoll.evaluate();
+       const ModifieddiceRoll = diceRoll.total + bluff;
+        
       if (ModifieddiceRoll >= DC) { 
           // DC Check SUCCESS
           const flatFootedEffectData = {
@@ -100,7 +97,10 @@ if (typeof game === 'undefined' || !game.user) {
                 content: text
             });
         //target.system.conditions['flat-footed'] = false;
-        }
+        }   
+
+})();// Async Roll
+        
     }//targetedTokens.size
 }//!actor
 //canvas.tokens.releaseAll();
