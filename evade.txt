@@ -1,17 +1,21 @@
 // Ensure the game object is available (it should be in Foundry VTT context)
 if (typeof game === 'undefined' || !game.user) {
     console.error("Foundry VTT 'game' object not found or user not logged in. This script must be run within an active Foundry VTT session.");
-}else{
-        if (!actor) {
-          ui.notifications.warn("You must have an actor selected");
-        } else {
-    //TARGETING TOKEN
-    // Check if any tokens are targeted
-    const target = game.user.targets.values().next().value.actor;
-    //const actor = game.user.targets.values().next().value.actor;
-          
+}else{ 
+      if(!canvas.tokens.controlled.length){
+        //No token selected, send notice and stop
+        ui.notifications.warn("You must have an character selected");
+      }else{
+        //const actor = canvas.tokens.controlled[0].document;
+        const actor = canvas.tokens.controlled[0].actor;
+        const target = game.user.targets.values().next().value.actor;
+
+         console.log(actor.name);
+         console.log(target.name);
+
+       console.log('Checking for Targets');
     if (game.user.targets.size > 0){
-      const actor = canvas.tokens.controlled[0].actor;
+      //const actor = canvas.tokens.controlled[0].actor;
       //This is the characters CL not the Targets...
         const CR = 15 + (1.5*(actor.system.details.cl.value));
         const DC = Math.floor(CR);
@@ -20,26 +24,19 @@ if (typeof game === 'undefined' || !game.user) {
         const tokenName = target.name;
         // Log the token name to the console
             ChatMessage.create({
-                content: `The ${tokenName} &nbsp;-&nbsp; <strong>Feint Target DC: ${DC}</strong>`,
+                content: `<small>The ${tokenName} &nbsp;-&nbsp; <strong>Combat Expertise(Ex) Target DC: ${DC}</strong></small>`,
             });
       const diceRoll = new Roll(`1d20`);   
       // Execute the roll
       await diceRoll.evaluate({ async: true });
       const OriginaldiceRoll = diceRoll;
       const ModifieddiceRoll = diceRoll.total + bluff;
-
-      console.log(bluff);
-      console.log(diceRoll.total);
-      console.log(ModifieddiceRoll);
       
-      if (ModifieddiceRoll >= DC) {
-         console.log('SUCCESS ====================================================');
-      
-          console.log(`Applying Flat-Footed to ${game.user.targets.size} targeted token(s)...`);
-          // Define the Flat-Footed effect data
+      if (ModifieddiceRoll >= DC) { 
+          // DC Check SUCCESS
           const flatFootedEffectData = {
-              label: "Flat-Footed",
-              name: "Flat-Footed",
+              label: "flat-footed",
+              name: "flat-footed",
               icon: "systems/sfrpg/icons/conditions/flatfooted.webp", // Standard Starfinder flat-footed icon
               origin: game.user.id, // Mark who applied the effect
                   duration: {
@@ -59,9 +56,9 @@ if (typeof game === 'undefined' || !game.user) {
             // We'll add a change that specifically targets the AC calculation.
             // For Starfinder, the 'denied' flag on the AC attribute is the canonical way.
             {
-                key: "system.attributes.ac.denied", // This key indicates a denied attribute
+                key: "system.attributes.attack.value", // This key indicates a denied attribute
                 mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, // Override the value
-                value: "dex", // Deny the Dexterity bonus
+                value: "-2", // Deny the Dexterity bonus
                 priority: 20 // High priority to ensure it applies
             },
             // You might also add a direct AC modifier if the above doesn't fully work
@@ -79,24 +76,32 @@ if (typeof game === 'undefined' || !game.user) {
             }
         }
     };
-         text = `<strong>${tokenName} is flat-footed: -2 DEX</strong><br/><small>You rolled a <a class="inline-result" style="color:black"><i class="fas fa-dice-d20"></i> ${diceRoll.total} + ${bluff} = ${ModifieddiceRoll}</small>`;
+
        // Check if the actor already has the Flat-Footed effect
-        
         if (target.system.conditions['flat-footed']) {
-            ui.notifications.info(`${tokenName} is already Flat-Footed.`);
-            }else{
-              // This works, but has no duration requiring the condition to be removed manually...
-               ChatMessage.create({
-                    content: text,
-                });
+          //Target is already flat-footed  
+          ui.notifications.info(`${tokenName} is already Fat-Footed.`);
+        }else{
+              // Create the active effect on the actor
+              //target.system.conditions['flat-footed'] = true;
+              //target._source.effects.createEmbeddedDocuments("ActiveEffect", [flatFootedEffectData]);
+              //ui.notifications.info(`Applied Flat-Footed to ${actor.name} for 1 round.`);
+          
+          text =`<p><small><strong>${tokenName} is Flat-Footed: -2 DEX?</strong></p><p>Roll:  <a class="inline-result" style="color:black"><i class="fas fa-dice-d20"></i> ${diceRoll.total} + ${bluff} = ${ModifieddiceRoll}</small></p> <p><strong>PLEASE APPLY FLAT FOOTED TO TARGET</p><p>CONTINUE WITH YOUR STANDARD ACTION</p>`;
+       
+              ChatMessage.create({
+                content: text,
+              });
             }          
        	}else{
         // DC CHECK FAIL
+        text = `<p><small><strong>${tokenName} Ignores the Bluff attempt.</strong></p><p>Roll:  <a class="inline-result" style="color:black"><i class="fas fa-dice-d20"></i> ${diceRoll.total} + ${bluff} = ${ModifieddiceRoll}</small></p>`;
            ChatMessage.create({
-                content: `The ${tokenName} &nbsp;-&nbsp; <strong>Ignores the Feint Attempt</strong>`,
+                content: text
             });
+        //target.system.conditions['flat-footed'] = false;
         }
-}//targetedTokens.size
+    }//targetedTokens.size
 }//!actor
 //canvas.tokens.releaseAll();
 }//object check
