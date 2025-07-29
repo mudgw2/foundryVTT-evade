@@ -12,96 +12,80 @@ if (typeof game === 'undefined' || !game.user) {
         const targetEAC = game.user.targets.values().next().value.actor.system.attributes.eac.value;
         const targetKAC = game.user.targets.values().next().value.actor.system.attributes.kac.value;
         const diceRoll = 0;
-        const expertise_die = '1d6'
-
+        const hasghost = 0;
+        const ghosttext = '';
+        const expertise_die = '1d4';
+        
     if (game.user.targets.size > 0){
       //const actor = canvas.tokens.controlled[0].actor;
       //This is the characters CL not the Targets...
-        const CR = 15 + (1.5*(actor.system.details.cl.value));
+        const CR = 20 + actor.system.details.cl.value;
         const DC = Math.floor(CR);
         let text = DC;
-        const bluff = actor.system.skills?.blu.mod;
+  
+        const stealth = actor.system.skills?.ste.mod;
         const tokenName = target.name;
+        const itemsArray = canvas.tokens.controlled[0].actor._source.items;
 
+        //const ghost=itemsArray.find(i=>i.name==="Ghost");
+        const hasGhost = Number(!!token.actor.items.getName("Ghost"));
+      
       (async () => {
+        
         const formula = `1d20`;
         let diceRoll = new Roll(formula);   
         await diceRoll.evaluate();
-       const ModifieddiceRoll = diceRoll.total + bluff;
         
-      if (ModifieddiceRoll >= DC) { 
-          // DC Check SUCCESS
-          const flatFootedEffectData = {
-              label: "flat-footed",
-              name: "flat-footed",
-              icon: "systems/sfrpg/icons/conditions/flatfooted.webp", // Standard Starfinder flat-footed icon
-              origin: game.user.id, // Mark who applied the effect
-                  duration: {
-                  rounds: 1, // Flat-footed is often for 1 round, but can be adjusted
-                  // You can also use `turns`, `combat`, `startRound`, `endRound`, `startTime`, `startTurn`, etc.
-                  // For a persistent effect until removed, you might omit duration or set a very long one.
-             },
-             changes: [
-            // This change sets the Dexterity bonus to AC to 0.
-            // The 'override' mode (5) means it replaces the existing value.
-            // For Starfinder, AC is usually calculated from system.attributes.ac.value
-            // and the dexterity bonus is part of that calculation.
-            // A more direct way to deny DEX to AC is to set the 'denied' flag or
-            // directly modify the AC calculation.
-            // The Starfinder system often handles conditions like Flat-Footed
-            // by denying the Dexterity bonus to AC directly when the condition is active.
-            // We'll add a change that specifically targets the AC calculation.
-            // For Starfinder, the 'denied' flag on the AC attribute is the canonical way.
-            {
-                key: "system.attributes.attack.value", // This key indicates a denied attribute
-                mode: CONST.ACTIVE_EFFECT_MODES.OVERRIDE, // Override the value
-                value: "-2", // Deny the Dexterity bonus
-                priority: 20 // High priority to ensure it applies
-            },
-            // You might also add a direct AC modifier if the above doesn't fully work
-            // or if you want to ensure a -2 penalty as a common house rule for flat-footed.
-            // {
-            //     key: "system.attributes.ac.value",
-            //     mode: CONST.ACTIVE_EFFECT_MODES.ADD, // Add a value
-            //     value: "-2", // Apply a -2 penalty to AC
-            //     priority: 20
-            // }
-        ],
-        flags: {
-            core: {
-                statusId: "flat-footed" // A unique ID for the status effect
-            }
-        }
-    };
+       const ModifieddiceRoll = diceRoll.total + stealth + hasGhost;
 
+        //target.setCondition('flat-footed', true);
+        const modifiersArray = game.user.targets.values().next().value.actor.system.allModifiers;
+        target.setCondition('flat-footed', true);
+        const effectArray = modifiersArray.find(i=>i.name === "Flat-Footed");
+
+        if(effectArray){
+          //console.log(effectArray);
+          console.log(effectArray.parent.system.activeDuration);
+          //game.user.targets.values().next().value.actor.system.allModifiers[1].parent.system.activeDuration
+          effectArray.parent.system.activeDuration.unit = "round";
+          effectArray.parent.system.activeDuration.value = 1;
+          
+          
+        }
+       target.setCondition('flat-footed', false);
+
+        
+       if (ModifieddiceRoll >= DC) { 
        // Check if the actor already has the Flat-Footed effect
         if (target.system.conditions['flat-footed']) {
           //Target is already flat-footed  
-          ui.notifications.info(`${tokenName} is already Fat-Footed.`);
+          ui.notifications.info(`${tokenName} is already Flat-Footed.`);
         }else{
-              // Create the active effect on the actor
-              //target.system.conditions['flat-footed'] = true;
-              //target._source.effects.createEmbeddedDocuments("ActiveEffect", [flatFootedEffectData]);
-              //ui.notifications.info(`Applied Flat-Footed to ${actor.name} for 1 round.`);
+          
           const level = canvas.tokens.controlled[0].actor.system.details.level.value;
 
-          if(level > 5 && level < 9){
-            const expertise_die = '1d6+1';
+          if(level >= 3 && level <= 5){
+            const expertise_die = '1d8';
           }
-          if(level > 9 && level < 13){
-            const expertise_die = '1d6+2';
+          if(level > 5 && level <= 7){
+            const expertise_die = '3d8';
           }
-          if(level > 13 && level < 17){
-            const expertise_die = '1d8+2';
+          if(level > 7 && level <= 9){
+            const expertise_die = '4d8';
           }
-          if(level > 17 && level < 20){
-            const expertise_die = '1d8+4';
+          if(level > 9 && level <= 11){
+            const expertise_die = '5d8';
+          }
+
+          if(hasGhost){
+            ghosttext = '<div><small>@UUID[Compendium.sfrpg.class-features.Item.nJxXUlTGdZ7Lc5ms]{Ghost}</small></div>';
+            console.log('GHOST TEXT');
           }
           
-          text =`<p>@UUID[Compendium.sfrpg.class-features.Item.hBxvwY1SxmxTNRXk]{Combat Expertise (Ex)}</p><div style="background-color: green;color:white;weight:bold;padding:10px;border-radius: 5px;">
-          <img src="systems/sfrpg/icons/conditions/flatfooted.webp" style="margin:0;max-width:30px;max-height:30px;padding-right:10px;float:left;" alt="Flat-Footed Condition Icon">
-          BLUFF SUCCESS</div><div>
-          <div style="text-align:center;"><small>Roll:  <a class="inline-result" style="color:black"><i class="fas fa-dice-d20"></i> ${diceRoll.total} + ${bluff} = ${ModifieddiceRoll}</small>
+          text =`<p>@UUID[Compendium.sfrpg.class-features.Item.MBNI94tbMoqizPUk]{Trick Attack (Ex)}</p><div style="background-color: green;color:white;weight:bold;padding:10px;border-radius: 5px;">
+          <img src="systems/sfrpg/icons/conditions/flatfooted.webp" style="margin:0;max-width:30px;max-height:30px;padding-right:10px;float:left;" alt="Flat-Footed Condition Icon">STEALTH SUCCESS</div><div>
+          ${ghosttext}
+          <div style="text-align:center;"><small>Roll:  <a class="inline-result" style="color:black"><i class="fas fa-dice-d20"></i> ${diceRoll.total} + ${stealth} + ${hasGhost} = ${ModifieddiceRoll}</small>
            <p><small><strong>${tokenName} is Flat-Footed</strong></p>
            <p><small><strong>Expertise Die: ${expertise_die}</strong></p>
            </div>
@@ -111,7 +95,6 @@ if (typeof game === 'undefined' || !game.user) {
               ChatMessage.create({
                 content: text,
               });
-
           
     const equippedWeapon = actor.items.find(item =>item.type === 'weapon' && item.system.equipped)[0];
         // --- Step 3: Determine the attack ability and construct the attack roll formula ---
@@ -129,29 +112,25 @@ if (typeof game === 'undefined' || !game.user) {
        // }
         // Add more logic here for specific weapon properties (e.g., thrown, heavy)
         // or if the weapon specifies a different attack ability in its data.
-console.log(actor.system.abilities[attackAbility].mod);
-          console.log(actor.system.attributes.baseAttackBonus.value);
+        //console.log(actor.system.abilities[attackAbility].mod);
+        //console.log(actor.system.attributes.baseAttackBonus.value);
         const attackBonus = actor.system.abilities[attackAbility].mod + actor.system.attributes.baseAttackBonus.value;
         // You might also add weapon-specific bonuses, feats, etc.
         const attackRollFormula = `1d20 + ${attackBonus}`;
-        console.log(equippedWeapon);
-
+        //console.log(equippedWeapon);
         //const damageParts = equippedWeapon.system.damage.parts[0].formula;
-     
-
-
-          
             }          
        	}else{
         // DC CHECK FAIL
         text = `<div style="background-color:red;color:white;weight:bold;padding:10px;border-radius: 5px;">
-          <img src="systems/sfrpg/icons/conditions/flatfooted.webp" style="margin:0;max-width:30px;max-height:30px;padding-right:10px;float:left;" alt="Flat-Footed Condition Icon">BLUFF FAIL</div><div>
+          <img src="systems/sfrpg/icons/conditions/flatfooted.webp" style="margin:0;max-width:30px;max-height:30px;padding-right:10px;float:left;" alt="Flat-Footed Condition Icon">STEALTH FAIL</div><div>
           
-          <p><small><strong>${tokenName} Ignores the Bluff attempt.</strong></p><p>Roll:  <a class="inline-result" style="color:black"><i class="fas fa-dice-d20"></i> ${diceRoll.total} + ${bluff} = ${ModifieddiceRoll}</small></p></div>`;
+          <p><small><strong>${tokenName} Ignores the Stealth attempt.</strong></p><p>Roll:  <a class="inline-result" style="color:black"><i class="fas fa-dice-d20"></i> ${diceRoll.total} + ${stealth} + ${hasGhost} = ${ModifieddiceRoll}</small></p>
+          <small style="float:right;text-align:right;width:50%;">Target DC: ${DC}</small>
+          </div>`;
            ChatMessage.create({
                 content: text
             });
-        //target.system.conditions['flat-footed'] = false;
         }   
 
 })();// Async Roll
