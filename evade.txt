@@ -13,7 +13,6 @@ if (typeof game === 'undefined' || !game.user) {
         const targetKAC = game.user.targets.values().next().value.actor.system.attributes.kac.value;
         const diceRoll = 0;
         const hasghost = 0;
-        const ghosttext = '';
         const expertise_die = '1d4';
         
     if (game.user.targets.size > 0){
@@ -22,6 +21,7 @@ if (typeof game === 'undefined' || !game.user) {
         const CR = 20 + actor.system.details.cl.value;
         const DC = Math.floor(CR);
         let text = DC;
+        let ghostText = "";
   
         const stealth = actor.system.skills?.ste.mod;
         const tokenName = target.name;
@@ -38,31 +38,34 @@ if (typeof game === 'undefined' || !game.user) {
         
        const ModifieddiceRoll = diceRoll.total + stealth + hasGhost;
 
-        //target.setCondition('flat-footed', true);
-        const modifiersArray = game.user.targets.values().next().value.actor.system.allModifiers;
-        target.setCondition('flat-footed', true);
-        const effectArray = modifiersArray.find(i=>i.name === "Flat-Footed");
-
-        if(effectArray){
-          //console.log(effectArray);
-          console.log(effectArray.parent.system.activeDuration);
-          //game.user.targets.values().next().value.actor.system.allModifiers[1].parent.system.activeDuration
-          effectArray.parent.system.activeDuration.unit = "round";
-          effectArray.parent.system.activeDuration.value = 1;
-          
-          
-        }
-       target.setCondition('flat-footed', false);
-
-        
-       if (ModifieddiceRoll >= DC) { 
-       // Check if the actor already has the Flat-Footed effect
-        if (target.system.conditions['flat-footed']) {
-          //Target is already flat-footed  
-          ui.notifications.info(`${tokenName} is already Flat-Footed.`);
+       if (ModifieddiceRoll >= DC){ 
+           // DC CHECK SUCCESS
+         //target.system.conditions['flat-footed']
+                 const modifiersArray = game.user.targets.values().next().value.actor.system.allModifiers;
+                 const effectArray = modifiersArray.find(i=>i.name === "Flat-Footed");
+         
+        if (effectArray) {
+            //Target is already flat-footed  
+            ui.notifications.info(`${tokenName} is already Flat-Footed.`);
         }else{
-          
+            //Target isn't already flat-footed
           const level = canvas.tokens.controlled[0].actor.system.details.level.value;
+          
+                  target.setCondition('flat-footed', true);
+                  if(effectArray){
+                  //console.log(effectArray);
+                  console.log(effectArray.parent.system.activeDuration);
+                  //game.user.targets.values().next().value.actor.system.allModifiers[1].parent.system.activeDuration
+                  effectArray.parent.system.activeDuration.unit = "round";
+                  effectArray.parent.system.activeDuration.endsOn = "onTurnEnd";
+                  effectArray.parent.system.activeDuration.expiryInit = 0;
+                  effectArray.parent.system.activeDuration.value = 1;
+                  effectArray.parent.system.activeDuration.total = 1;
+                  effectArray.parent.system.activeDuration.remaining.string = "1 Round";
+                  effectArray.parent.system.activeDuration.remaining.value = 6;
+                  effectArray.parent.system.activeDuration.expiryMode.turn = "origin";
+                  effectArray.parent.system.activeDuration.expiryMode.type = "turn";
+                  }
 
           if(level >= 3 && level <= 5){
             const expertise_die = '1d8';
@@ -78,13 +81,12 @@ if (typeof game === 'undefined' || !game.user) {
           }
 
           if(hasGhost){
-            ghosttext = '<div><small>@UUID[Compendium.sfrpg.class-features.Item.nJxXUlTGdZ7Lc5ms]{Ghost}</small></div>';
-            console.log('GHOST TEXT');
+            ghostText = '<div><small>@UUID[Compendium.sfrpg.class-features.Item.nJxXUlTGdZ7Lc5ms]{Ghost}</small></div>';
           }
           
           text =`<p>@UUID[Compendium.sfrpg.class-features.Item.MBNI94tbMoqizPUk]{Trick Attack (Ex)}</p><div style="background-color: green;color:white;weight:bold;padding:10px;border-radius: 5px;">
-          <img src="systems/sfrpg/icons/conditions/flatfooted.webp" style="margin:0;max-width:30px;max-height:30px;padding-right:10px;float:left;" alt="Flat-Footed Condition Icon">STEALTH SUCCESS</div><div>
-          ${ghosttext}
+          <img src="systems/sfrpg/icons/conditions/flatfooted.webp" style="margin:0;max-width:30px;max-height:30px;padding-right:10px;float:left;" alt="Flat-Footed Condition Icon"/>STEALTH SUCCESS</div><div>
+          ${ghostText}
           <div style="text-align:center;"><small>Roll:  <a class="inline-result" style="color:black"><i class="fas fa-dice-d20"></i> ${diceRoll.total} + ${stealth} + ${hasGhost} = ${ModifieddiceRoll}</small>
            <p><small><strong>${tokenName} is Flat-Footed</strong></p>
            <p><small><strong>Expertise Die: ${expertise_die}</strong></p>
@@ -95,31 +97,8 @@ if (typeof game === 'undefined' || !game.user) {
               ChatMessage.create({
                 content: text,
               });
-          
-    const equippedWeapon = actor.items.find(item =>item.type === 'weapon' && item.system.equipped)[0];
-        // --- Step 3: Determine the attack ability and construct the attack roll formula ---
-        // Starfinder attack rolls typically use STR for melee, DEX for ranged,
-        // or a specific ability if the weapon has a special property.
-        // This example makes a simplified assumption.
-        let attackAbility = 'str'; // Default to Strength
-       // if (equippedWeapon.system.properties.includes('finesse')) {
-            // Finesse weapons use STR or DEX, whichever is higher for attack
-         //   const strMod = actor.system.abilities.str.mod;
-         //   const dexMod = actor.system.abilities.dex.mod;
-         //   attackAbility = (dexMod > strMod) ? 'dex' : 'str';
-        //} else if (equippedWeapon.system.properties.includes('ranged')) {
-            attackAbility = 'dex'; // Ranged weapons typically use Dexterity
-       // }
-        // Add more logic here for specific weapon properties (e.g., thrown, heavy)
-        // or if the weapon specifies a different attack ability in its data.
-        //console.log(actor.system.abilities[attackAbility].mod);
-        //console.log(actor.system.attributes.baseAttackBonus.value);
-        const attackBonus = actor.system.abilities[attackAbility].mod + actor.system.attributes.baseAttackBonus.value;
-        // You might also add weapon-specific bonuses, feats, etc.
-        const attackRollFormula = `1d20 + ${attackBonus}`;
-        //console.log(equippedWeapon);
-        //const damageParts = equippedWeapon.system.damage.parts[0].formula;
-            }          
+        }//
+         
        	}else{
         // DC CHECK FAIL
         text = `<div style="background-color:red;color:white;weight:bold;padding:10px;border-radius: 5px;">
