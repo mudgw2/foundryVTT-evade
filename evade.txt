@@ -1,3 +1,4 @@
+// Foundry VTT Script for Starfinder 1e Trick Attack
 // Ensure the game object is available (it should be in Foundry VTT context)
 if (typeof game === 'undefined' || !game.user) {
     console.error("Foundry VTT 'game' object not found or user not logged in. This script must be run within an active Foundry VTT session.");
@@ -35,33 +36,24 @@ if (typeof game === 'undefined' || !game.user) {
          // DC CHECK SUCCESS
         let modifiersArray = game.user.targets.values().next().value.actor.system;
         let effectArray = game.user.targets.values().next().value.actor.system.allModifiers.find(i=>i.name === "Flat-Footed");
-       
         // console.log(effectArray);
-         
         if (effectArray) {
             //Target is already flat-footed  
             ui.notifications.info(`${tokenName} is already Flat-Footed.`);
-            target.setCondition('flat-footed', false);
         }else{
             //Target isn't already flat-footed
             level = canvas.tokens.controlled[0].actor.system.details.level.value;
             await target.setCondition('flat-footed', true);
             //The path to the duration for Flat-Footed
-            //console.log(game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed"));
-            //game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed").update({"system.activeDuration.unit": "round"});
-          //game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed").system.activeDuration.unit
-            //game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed");
-          const flatFootedEffect = game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed");
-          await flatFootedEffect.update({"system.activeDuration.unit": "round"});
-      
-                  //modifiersArray.parent.system.activeDuration.expiryInit = 0;
-                  //modifiersArray.parent.system.activeDuration.value = 1;
-                  //modifiersArray.parent.system.activeDuration.total = 1;
-                  //modifiersArray.parent.system.activeDuration.remaining.string = "1 Round";
-                  //modifiersArray.parent.system.activeDuration.remaining.value = 6;
-                  //modifiersArray.parent.system.activeDuration.expiryMode.turn = "origin";
-                  //modifiersArray.parent.system.activeDuration.expiryMode.type = "turn";
-                  
+            const flatFootedEffect = game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed");
+            //Set for 1 round
+            await flatFootedEffect.update({"system.activeDuration.unit": "round"});
+            await flatFootedEffect.update({"system.activeDuration.value": 1});
+            await flatFootedEffect.update({"system.activeDuration.expiryInit": 0});
+            await flatFootedEffect.update({"system.activeDuration.total": 1});
+            await flatFootedEffect.update({"system.activeDuration.string": "1 Round"});
+            await flatFootedEffect.update({"system.activeDuration.turn": "origin"});
+            await flatFootedEffect.update({"system.activeDuration.type": "turn"});
 
           if(level >= 3 && level <= 5){
             expertise_die = '1d8';
