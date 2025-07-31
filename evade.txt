@@ -45,19 +45,15 @@ if (typeof game === 'undefined' || !game.user) {
         }else{
             //Target isn't already flat-footed
             level = canvas.tokens.controlled[0].actor.system.details.level.value;
-            target.setCondition('flat-footed', true);
+            await target.setCondition('flat-footed', true);
             //The path to the duration for Flat-Footed
-            //Cannot read properties of undefined (reading 'parent')
-//game.users.targets.first().actor
-         
-          
-//game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed").system.activeDuration.unit = 'round';
-          game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed").update({"system.activeDuration.unit": "round"});
-          
-          //game.user.targets.values().next().value.actor.system.allModifiers.find(i=>i.name === "Flat-Footed").parent.system.activeDuration.total = 1;
-          //game.user.targets.values().next().value.actor.system.allModifiers.find(i=>i.name === "Flat-Footed").parent.system.activeDuration.endsOn = "onTurnEnd";
-
-
+            //console.log(game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed"));
+            //game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed").update({"system.activeDuration.unit": "round"});
+          //game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed").system.activeDuration.unit
+            //game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed");
+          const flatFootedEffect = game.user.targets.first().actor.itemTypes.effect.find(i => i.name === "Flat-Footed");
+          await flatFootedEffect.update({"system.activeDuration.unit": "round"});
+      
                   //modifiersArray.parent.system.activeDuration.expiryInit = 0;
                   //modifiersArray.parent.system.activeDuration.value = 1;
                   //modifiersArray.parent.system.activeDuration.total = 1;
